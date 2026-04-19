@@ -201,14 +201,23 @@
       <span>Tap to take a photo or upload</span>
     </div>
 
-    <input type="file" id="file-input" accept="image/*" capture="environment" />
+    <input type="file" id="file-input-camera" accept="image/*" capture="environment" />
+    <input type="file" id="file-input-gallery" accept="image/*" />
 
-    <button class="btn btn-primary" id="capture-btn" onclick="document.getElementById('file-input').click()">
+    <button class="btn btn-primary" onclick="document.getElementById('file-input-camera').click()">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
         <circle cx="12" cy="13" r="4"/>
       </svg>
-      Take Photo / Choose Image
+      Take Photo
+    </button>
+
+    <button class="btn btn-secondary" style="margin-top:10px" onclick="document.getElementById('file-input-gallery').click()">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/>
+        <polyline points="21 15 16 10 5 21"/>
+      </svg>
+      Choose from Gallery
     </button>
 
     <button class="btn btn-secondary" id="analyze-btn" style="display:none" onclick="analyzeImage()">
@@ -256,11 +265,10 @@
 <script>
   let selectedFile = null;
 
-  document.getElementById('file-input').addEventListener('change', function(e) {
+  function handleFileSelect(e) {
     const file = e.target.files[0];
     if (!file) return;
     selectedFile = file;
-
     const reader = new FileReader();
     reader.onload = ev => {
       const preview = document.getElementById('preview');
@@ -270,7 +278,10 @@
       document.getElementById('analyze-btn').style.display = 'flex';
     };
     reader.readAsDataURL(file);
-  });
+  }
+
+  document.getElementById('file-input-camera').addEventListener('change', handleFileSelect);
+  document.getElementById('file-input-gallery').addEventListener('change', handleFileSelect);
 
   async function analyzeImage() {
     if (!selectedFile) return;
@@ -339,7 +350,8 @@
 
   function resetApp() {
     selectedFile = null;
-    document.getElementById('file-input').value = '';
+    document.getElementById('file-input-camera').value = '';
+    document.getElementById('file-input-gallery').value = '';
     document.getElementById('preview').style.display = 'none';
     document.getElementById('placeholder').style.display = 'flex';
     document.getElementById('analyze-btn').style.display = 'none';
