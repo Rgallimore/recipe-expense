@@ -13,78 +13,85 @@ load_dotenv()
 app = FastAPI()
 client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
+# Prices in CAD — No Frills Toronto (2024 estimates)
 PRICE_DB = {
-    "egg": {"price": 0.30, "unit": "each"},
-    "eggs": {"price": 0.30, "unit": "each"},
-    "butter": {"price": 0.25, "unit": "tbsp"},
-    "milk": {"price": 0.15, "unit": "cup"},
-    "heavy cream": {"price": 0.50, "unit": "cup"},
-    "cream cheese": {"price": 1.50, "unit": "cup"},
-    "sour cream": {"price": 0.40, "unit": "cup"},
-    "cheddar cheese": {"price": 1.00, "unit": "cup"},
-    "parmesan": {"price": 1.20, "unit": "cup"},
-    "mozzarella": {"price": 0.90, "unit": "cup"},
-    "yogurt": {"price": 0.80, "unit": "cup"},
-    "chicken breast": {"price": 2.00, "unit": "lb"},
-    "chicken": {"price": 1.80, "unit": "lb"},
-    "ground beef": {"price": 3.00, "unit": "lb"},
-    "beef": {"price": 4.00, "unit": "lb"},
-    "pork": {"price": 2.50, "unit": "lb"},
-    "bacon": {"price": 0.75, "unit": "slice"},
-    "salmon": {"price": 5.00, "unit": "lb"},
-    "shrimp": {"price": 4.00, "unit": "lb"},
-    "tuna": {"price": 1.50, "unit": "can"},
-    "onion": {"price": 0.50, "unit": "each"},
-    "garlic": {"price": 0.10, "unit": "clove"},
-    "tomato": {"price": 0.75, "unit": "each"},
-    "tomatoes": {"price": 0.75, "unit": "each"},
-    "potato": {"price": 0.50, "unit": "each"},
-    "potatoes": {"price": 0.50, "unit": "each"},
+    # Dairy & Eggs
+    "egg": {"price": 0.28, "unit": "each"},       # dozen ~$3.39
+    "eggs": {"price": 0.28, "unit": "each"},
+    "butter": {"price": 0.31, "unit": "tbsp"},     # 454g ~$5.49
+    "milk": {"price": 0.32, "unit": "cup"},        # 4L ~$5.49
+    "heavy cream": {"price": 1.00, "unit": "cup"}, # 473ml ~$4.49
+    "cream cheese": {"price": 1.80, "unit": "cup"},# 250g ~$3.49
+    "sour cream": {"price": 0.75, "unit": "cup"},  # 500ml ~$2.99
+    "cheddar cheese": {"price": 1.80, "unit": "cup"}, # 400g ~$6.49
+    "parmesan": {"price": 2.50, "unit": "cup"},
+    "mozzarella": {"price": 1.80, "unit": "cup"},
+    "yogurt": {"price": 0.90, "unit": "cup"},      # 750g ~$3.49
+    # Meat & Protein
+    "chicken breast": {"price": 4.00, "unit": "lb"},  # ~$8.80/kg
+    "chicken": {"price": 2.75, "unit": "lb"},          # whole ~$6/kg
+    "ground beef": {"price": 5.25, "unit": "lb"},      # ~$11.50/kg
+    "beef": {"price": 7.50, "unit": "lb"},
+    "pork": {"price": 3.75, "unit": "lb"},
+    "bacon": {"price": 0.45, "unit": "slice"},     # 375g ~$6.99, ~15 slices
+    "salmon": {"price": 8.50, "unit": "lb"},       # ~$18.70/kg
+    "shrimp": {"price": 7.00, "unit": "lb"},
+    "tuna": {"price": 2.00, "unit": "can"},        # 170g can
+    # Produce
+    "onion": {"price": 0.55, "unit": "each"},
+    "garlic": {"price": 0.15, "unit": "clove"},
+    "tomato": {"price": 0.90, "unit": "each"},
+    "tomatoes": {"price": 0.90, "unit": "each"},
+    "potato": {"price": 0.55, "unit": "each"},
+    "potatoes": {"price": 0.55, "unit": "each"},
     "carrot": {"price": 0.30, "unit": "each"},
     "carrots": {"price": 0.30, "unit": "each"},
-    "celery": {"price": 0.20, "unit": "stalk"},
-    "bell pepper": {"price": 1.00, "unit": "each"},
-    "lemon": {"price": 0.60, "unit": "each"},
-    "lime": {"price": 0.40, "unit": "each"},
-    "spinach": {"price": 0.20, "unit": "cup"},
-    "broccoli": {"price": 0.40, "unit": "cup"},
-    "mushrooms": {"price": 0.50, "unit": "cup"},
-    "zucchini": {"price": 0.80, "unit": "each"},
-    "avocado": {"price": 1.20, "unit": "each"},
-    "flour": {"price": 0.05, "unit": "cup"},
-    "sugar": {"price": 0.10, "unit": "cup"},
-    "brown sugar": {"price": 0.12, "unit": "cup"},
-    "olive oil": {"price": 0.20, "unit": "tbsp"},
-    "vegetable oil": {"price": 0.10, "unit": "tbsp"},
-    "rice": {"price": 0.15, "unit": "cup"},
-    "pasta": {"price": 0.30, "unit": "cup"},
-    "bread crumbs": {"price": 0.15, "unit": "cup"},
-    "panko": {"price": 0.20, "unit": "cup"},
-    "oats": {"price": 0.10, "unit": "cup"},
-    "honey": {"price": 0.30, "unit": "tbsp"},
-    "soy sauce": {"price": 0.10, "unit": "tbsp"},
-    "vinegar": {"price": 0.05, "unit": "tbsp"},
-    "chicken broth": {"price": 0.50, "unit": "cup"},
-    "beef broth": {"price": 0.50, "unit": "cup"},
-    "tomato paste": {"price": 0.40, "unit": "tbsp"},
-    "canned tomatoes": {"price": 1.20, "unit": "can"},
-    "coconut milk": {"price": 1.80, "unit": "can"},
-    "beans": {"price": 0.80, "unit": "can"},
-    "chickpeas": {"price": 0.80, "unit": "can"},
-    "baking powder": {"price": 0.02, "unit": "tsp"},
-    "baking soda": {"price": 0.01, "unit": "tsp"},
-    "vanilla extract": {"price": 0.25, "unit": "tsp"},
-    "cocoa powder": {"price": 0.20, "unit": "tbsp"},
-    "chocolate chips": {"price": 0.40, "unit": "cup"},
-    "yeast": {"price": 0.30, "unit": "tsp"},
+    "celery": {"price": 0.25, "unit": "stalk"},
+    "bell pepper": {"price": 1.49, "unit": "each"},
+    "lemon": {"price": 0.79, "unit": "each"},
+    "lime": {"price": 0.55, "unit": "each"},
+    "spinach": {"price": 0.45, "unit": "cup"},
+    "broccoli": {"price": 0.60, "unit": "cup"},
+    "mushrooms": {"price": 0.90, "unit": "cup"},
+    "zucchini": {"price": 1.00, "unit": "each"},
+    "avocado": {"price": 1.49, "unit": "each"},
+    # Pantry / Grains
+    "flour": {"price": 0.18, "unit": "cup"},       # 2kg ~$3.99
+    "sugar": {"price": 0.22, "unit": "cup"},       # 2kg ~$3.79
+    "brown sugar": {"price": 0.25, "unit": "cup"},
+    "olive oil": {"price": 0.40, "unit": "tbsp"},
+    "vegetable oil": {"price": 0.18, "unit": "tbsp"},
+    "rice": {"price": 0.28, "unit": "cup"},        # 2kg ~$4.99
+    "pasta": {"price": 0.45, "unit": "cup"},       # 900g ~$2.99
+    "bread crumbs": {"price": 0.30, "unit": "cup"},
+    "panko": {"price": 0.40, "unit": "cup"},
+    "oats": {"price": 0.22, "unit": "cup"},
+    "honey": {"price": 0.50, "unit": "tbsp"},
+    "soy sauce": {"price": 0.18, "unit": "tbsp"},
+    "vinegar": {"price": 0.08, "unit": "tbsp"},
+    "chicken broth": {"price": 0.70, "unit": "cup"},
+    "beef broth": {"price": 0.70, "unit": "cup"},
+    "tomato paste": {"price": 0.25, "unit": "tbsp"},
+    "canned tomatoes": {"price": 1.69, "unit": "can"},
+    "coconut milk": {"price": 2.29, "unit": "can"},
+    "beans": {"price": 1.29, "unit": "can"},
+    "chickpeas": {"price": 1.29, "unit": "can"},
+    # Baking
+    "baking powder": {"price": 0.03, "unit": "tsp"},
+    "baking soda": {"price": 0.02, "unit": "tsp"},
+    "vanilla extract": {"price": 0.45, "unit": "tsp"},
+    "cocoa powder": {"price": 0.30, "unit": "tbsp"},
+    "chocolate chips": {"price": 0.70, "unit": "cup"},
+    "yeast": {"price": 0.45, "unit": "tsp"},
+    # Spices
     "salt": {"price": 0.01, "unit": "tsp"},
-    "pepper": {"price": 0.02, "unit": "tsp"},
-    "cumin": {"price": 0.05, "unit": "tsp"},
-    "paprika": {"price": 0.05, "unit": "tsp"},
-    "oregano": {"price": 0.04, "unit": "tsp"},
-    "thyme": {"price": 0.04, "unit": "tsp"},
-    "cinnamon": {"price": 0.04, "unit": "tsp"},
-    "chili powder": {"price": 0.05, "unit": "tsp"},
+    "pepper": {"price": 0.04, "unit": "tsp"},
+    "cumin": {"price": 0.09, "unit": "tsp"},
+    "paprika": {"price": 0.08, "unit": "tsp"},
+    "oregano": {"price": 0.07, "unit": "tsp"},
+    "thyme": {"price": 0.07, "unit": "tsp"},
+    "cinnamon": {"price": 0.07, "unit": "tsp"},
+    "chili powder": {"price": 0.08, "unit": "tsp"},
 }
 
 UNIT_CONVERSIONS = {
@@ -102,7 +109,7 @@ def estimate_cost(ingredients: list[dict]) -> list[dict]:
     results = []
     for ing in ingredients:
         name = ing["name"].lower().strip()
-        qty = float(ing.get("quantity", 1))
+        qty = float(ing.get("quantity") or 1)
         unit = ing.get("unit", "each").lower().strip()
 
         match = None

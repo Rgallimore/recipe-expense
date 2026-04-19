@@ -187,7 +187,7 @@
 
 <header>
   <h1>Recipe Cost Estimator</h1>
-  <p>Snap a cookbook page &rarr; get an instant cost estimate</p>
+  <p>Snap a cookbook page &rarr; get an instant cost estimate (CAD &bull; No Frills Toronto)</p>
 </header>
 
 <main>
@@ -306,8 +306,8 @@
 
     document.getElementById('recipe-name').textContent = data.recipe_name;
     document.getElementById('servings-label').textContent = `Serves ${data.servings}`;
-    document.getElementById('total-cost').textContent = `$${data.total.toFixed(2)}`;
-    document.getElementById('per-serving').textContent = `$${data.per_serving.toFixed(2)}`;
+    document.getElementById('total-cost').textContent = `CA$${data.total.toFixed(2)}`;
+    document.getElementById('per-serving').textContent = `CA$${data.per_serving.toFixed(2)}`;
 
     const body = document.getElementById('ingredients-body');
     body.innerHTML = '';
@@ -326,7 +326,7 @@
 
       const costEl = document.createElement('div');
       costEl.className = 'ing-cost';
-      costEl.textContent = `$${ing.estimated_cost.toFixed(2)}`;
+      costEl.textContent = `CA$${ing.estimated_cost.toFixed(2)}`;
 
       row.appendChild(nameEl);
       row.appendChild(qtyEl);
