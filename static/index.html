@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>Recipe Cost Estimator</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f0f4f8;
+      color: #1a202c;
+      min-height: 100vh;
+    }
+
+    header {
+      background: #2d6a4f;
+      color: white;
+      padding: 18px 20px;
+      text-align: center;
+    }
+    header h1 { font-size: 1.4rem; font-weight: 700; }
+    header p  { font-size: 0.85rem; opacity: 0.85; margin-top: 4px; }
+
+    main { padding: 20px 16px; max-width: 520px; margin: 0 auto; }
+
+    /* Camera card */
+    .camera-card {
+      background: white;
+      border-radius: 16px;
+      padding: 24px 20px;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    #preview {
+      width: 100%;
+      max-height: 280px;
+      object-fit: cover;
+      border-radius: 10px;
+      display: none;
+      margin-bottom: 16px;
+    }
+
+    .placeholder {
+      width: 100%;
+      height: 180px;
+      background: #e8f5e9;
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #52b788;
+      margin-bottom: 16px;
+      border: 2px dashed #95d5b2;
+    }
+    .placeholder svg { width: 56px; height: 56px; margin-bottom: 8px; }
+    .placeholder span { font-size: 0.9rem; }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 28px;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      width: 100%;
+      justify-content: center;
+      transition: opacity 0.15s;
+    }
+    .btn:active { opacity: 0.75; }
+    .btn-primary { background: #2d6a4f; color: white; }
+    .btn-secondary { background: #e8f5e9; color: #2d6a4f; margin-top: 10px; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    #file-input { display: none; }
+
+    /* Loader */
+    .loader {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      padding: 32px 0;
+      gap: 14px;
+      color: #555;
+    }
+    .spinner {
+      width: 40px; height: 40px;
+      border: 4px solid #e8f5e9;
+      border-top-color: #2d6a4f;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Results */
+    #results { display: none; margin-top: 20px; }
+
+    .recipe-header {
+      background: #2d6a4f;
+      color: white;
+      border-radius: 12px 12px 0 0;
+      padding: 16px 18px;
+    }
+    .recipe-header h2 { font-size: 1.15rem; }
+    .recipe-header small { opacity: 0.8; font-size: 0.82rem; }
+
+    .totals {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      background: #1b4332;
+      color: white;
+    }
+    .total-item {
+      padding: 14px 18px;
+      text-align: center;
+    }
+    .total-item:first-child { border-right: 1px solid rgba(255,255,255,0.15); }
+    .total-label { font-size: 0.75rem; opacity: 0.75; text-transform: uppercase; letter-spacing: 0.05em; }
+    .total-value { font-size: 1.6rem; font-weight: 700; margin-top: 2px; }
+
+    .ingredients-list {
+      background: white;
+      border-radius: 0 0 12px 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    .ing-header {
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      padding: 10px 18px;
+      background: #f7f9f7;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      color: #666;
+      border-bottom: 1px solid #eee;
+      gap: 8px;
+    }
+    .ing-header .col-qty { text-align: center; min-width: 60px; }
+    .ing-header .col-cost { text-align: right; min-width: 64px; }
+
+    .ing-row {
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      padding: 12px 18px;
+      border-bottom: 1px solid #f0f0f0;
+      align-items: center;
+      gap: 8px;
+    }
+    .ing-row:last-child { border-bottom: none; }
+    .ing-name { font-size: 0.95rem; }
+    .ing-name.unmatched { color: #999; }
+    .ing-qty { font-size: 0.85rem; color: #555; text-align: center; min-width: 60px; }
+    .ing-cost { font-size: 0.95rem; font-weight: 600; color: #2d6a4f; text-align: right; min-width: 64px; }
+    .warn-badge {
+      display: inline-block;
+      font-size: 0.68rem;
+      background: #fff3cd;
+      color: #856404;
+      border-radius: 4px;
+      padding: 1px 5px;
+      margin-left: 4px;
+      vertical-align: middle;
+    }
+
+    .new-photo-btn { margin-top: 16px; }
+
+    .error-msg {
+      background: #fff0f0;
+      color: #c00;
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-top: 16px;
+      font-size: 0.9rem;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Recipe Cost Estimator</h1>
+  <p>Snap a cookbook page &rarr; get an instant cost estimate</p>
+</header>
+
+<main>
+  <div class="camera-card" id="camera-card">
+    <img id="preview" alt="Recipe preview" />
+    <div class="placeholder" id="placeholder">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+        <circle cx="12" cy="13" r="3"/>
+      </svg>
+      <span>Tap to take a photo or upload</span>
+    </div>
+
+    <input type="file" id="file-input" accept="image/*" capture="environment" />
+
+    <button class="btn btn-primary" id="capture-btn" onclick="document.getElementById('file-input').click()">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
+        <circle cx="12" cy="13" r="4"/>
+      </svg>
+      Take Photo / Choose Image
+    </button>
+
+    <button class="btn btn-secondary" id="analyze-btn" style="display:none" onclick="analyzeImage()">
+      Estimate Cost
+    </button>
+  </div>
+
+  <div class="loader" id="loader">
+    <div class="spinner"></div>
+    <span>Analyzing recipe with GPT-4o-mini...</span>
+  </div>
+
+  <div class="error-msg" id="error-msg"></div>
+
+  <div id="results">
+    <div class="recipe-header">
+      <h2 id="recipe-name"></h2>
+      <small id="servings-label"></small>
+    </div>
+    <div class="totals">
+      <div class="total-item">
+        <div class="total-label">Total Cost</div>
+        <div class="total-value" id="total-cost"></div>
+      </div>
+      <div class="total-item">
+        <div class="total-label">Per Serving</div>
+        <div class="total-value" id="per-serving"></div>
+      </div>
+    </div>
+    <div class="ingredients-list">
+      <div class="ing-header">
+        <span>Ingredient</span>
+        <span class="col-qty">Qty / Unit</span>
+        <span class="col-cost">Est. Cost</span>
+      </div>
+      <div id="ingredients-body"></div>
+    </div>
+
+    <button class="btn btn-secondary new-photo-btn" onclick="resetApp()">
+      Take Another Photo
+    </button>
+  </div>
+</main>
+
+<script>
+  let selectedFile = null;
+
+  document.getElementById('file-input').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    selectedFile = file;
+
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const preview = document.getElementById('preview');
+      preview.src = ev.target.result;
+      preview.style.display = 'block';
+      document.getElementById('placeholder').style.display = 'none';
+      document.getElementById('analyze-btn').style.display = 'flex';
+    };
+    reader.readAsDataURL(file);
+  });
+
+  async function analyzeImage() {
+    if (!selectedFile) return;
+
+    document.getElementById('camera-card').style.display = 'none';
+    document.getElementById('results').style.display = 'none';
+    document.getElementById('error-msg').style.display = 'none';
+
+    const loader = document.getElementById('loader');
+    loader.style.display = 'flex';
+
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+
+    try {
+      const res = await fetch('/analyze', { method: 'POST', body: formData });
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.detail || 'Server error');
+
+      renderResults(data);
+    } catch (err) {
+      loader.style.display = 'none';
+      document.getElementById('camera-card').style.display = 'block';
+      const errEl = document.getElementById('error-msg');
+      errEl.textContent = 'Error: ' + err.message;
+      errEl.style.display = 'block';
+    }
+  }
+
+  function renderResults(data) {
+    document.getElementById('loader').style.display = 'none';
+
+    document.getElementById('recipe-name').textContent = data.recipe_name;
+    document.getElementById('servings-label').textContent = `Serves ${data.servings}`;
+    document.getElementById('total-cost').textContent = `$${data.total.toFixed(2)}`;
+    document.getElementById('per-serving').textContent = `$${data.per_serving.toFixed(2)}`;
+
+    const body = document.getElementById('ingredients-body');
+    body.innerHTML = '';
+
+    data.ingredients.forEach(ing => {
+      const row = document.createElement('div');
+      row.className = 'ing-row';
+
+      const nameEl = document.createElement('div');
+      nameEl.className = 'ing-name' + (ing.matched ? '' : ' unmatched');
+      nameEl.innerHTML = ing.name + (ing.matched ? '' : '<span class="warn-badge">est.</span>');
+
+      const qtyEl = document.createElement('div');
+      qtyEl.className = 'ing-qty';
+      qtyEl.textContent = `${ing.quantity} ${ing.unit}`;
+
+      const costEl = document.createElement('div');
+      costEl.className = 'ing-cost';
+      costEl.textContent = `$${ing.estimated_cost.toFixed(2)}`;
+
+      row.appendChild(nameEl);
+      row.appendChild(qtyEl);
+      row.appendChild(costEl);
+      body.appendChild(row);
+    });
+
+    document.getElementById('results').style.display = 'block';
+  }
+
+  function resetApp() {
+    selectedFile = null;
+    document.getElementById('file-input').value = '';
+    document.getElementById('preview').style.display = 'none';
+    document.getElementById('placeholder').style.display = 'flex';
+    document.getElementById('analyze-btn').style.display = 'none';
+    document.getElementById('results').style.display = 'none';
+    document.getElementById('error-msg').style.display = 'none';
+    document.getElementById('camera-card').style.display = 'block';
+  }
+</script>
+</body>
+</html>
